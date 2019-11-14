@@ -1,0 +1,254 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>NetForward-链路管理</title>
+
+
+  <!-- Fix chrome language detection -->
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+  <meta http-equiv="Content-Language" content="zh" />
+
+  <!-- Styles -->
+  <link href="css/core.css" rel="stylesheet">
+  <!--[if lt IE 9]>
+    <script src="/js/selectivizr-min.js"></script>
+    <script src="/js/html5shiv.min.js"></script>
+    <script src="/js/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+  <div class="container" id="app">
+    <h2>NetForward-链路管理 &nbsp; <a href="#" data-toggle="modal" data-target="#New"
+        style="float:right;font-size:18px;">新增链路</a></h2>
+    <div class="list-group" v-for="link in links">
+      <a href="#" class="list-group-item list-group-item-action" data-toggle="modal" data-target="#Change"
+        v-on:click="showChange(link.name)">{{link.name}}&nbsp;&nbsp;&nbsp;({{link.from}}&nbsp;---->&nbsp;{{link.to}})</a>
+    </div>
+    <!-- 模态框 -->
+    <div class="modal fade" id="Change">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <!-- 模态框头部 -->
+          <div class="modal-header">
+            <h4 class="modal-title">修改链路信息</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <!-- 模态框主体 -->
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="text">Name:</label>
+              <input type="text" class="form-control" id="name" placeholder="Enter Link Name" v-model="now_name"
+                readonly>
+            </div>
+            <div class="form-group">
+              <label for="text">From:</label>
+              <input type="text" class="form-control" id="from" placeholder="Enter Link From" v-model="now_from">
+            </div>
+            <div class="form-group">
+              <label for="text">To:</label>
+              <input type="text" class="form-control" id="to" placeholder="Enter Link To" v-model="now_to">
+            </div>
+          </div>
+          <!-- 模态框底部 -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" data-dismiss="modal"
+              v-on:click="saveChange(now_name)">保存修改</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal"
+              v-on:click="deleteServer(now_name)">删除链路</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- 模态框 -->
+    <div class="modal fade" id="New">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <!-- 模态框头部 -->
+          <div class="modal-header">
+            <h4 class="modal-title">新增链路</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <!-- 模态框主体 -->
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="text">Name:</label>
+              <input type="text" class="form-control" id="new_name" placeholder="Enter New Link Name"
+                v-model="new_name">
+            </div>
+            <div class="form-group">
+              <label for="text">From:</label>
+              <input type="text" class="form-control" id="new_from" placeholder="Enter New Link From"
+                v-model="new_from">
+            </div>
+            <div class="form-group">
+              <label for="text">To: &nbsp; <a href="#new_show" data-toggle="collapse">选择</a></label>
+              <div id="new_show" class="collapse">
+                <div v-for="_arp in arp">
+                  <a href="#" v-on:click="showChange(_arp)">{{_arp}}</a>
+                </div>
+              </div>
+              <input type="text" class="form-control" id="new_to" placeholder="Enter New Link To" v-model="new_to">
+            </div>
+          </div>
+          <!-- 模态框底部 -->
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" data-dismiss="modal"
+              v-on:click="newServer(new_name)">添加链路</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/jquery-1.10.2.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/vue.min.js"></script>
+  <script src="js/axios.min.js"></script>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        links: [],
+        arp: ["127.0.0.1","127.0.0.2"],
+        now_name: "",
+        now_from: "",
+        now_to: "",
+        new_name: "",
+        new_from: "",
+        new_to: ""
+      },
+      mounted: function () {
+        this.getServers()
+        this.getArp()
+      },
+      methods: {
+        getServers: function () {
+          var self = this
+          console.log("Start Get Data")
+          axios.post(window.location.href, "type=getLinks")
+            .then(function (data) {
+              console.log("Get Data")
+              if (data.data != "error") {
+                self.links = data.data
+                console.log(data.data)
+              }
+              else {
+                alert("获取数据失败！")
+              }
+            })
+            .catch(function (error) { // 请求失败处理
+              console.log(error);
+            });
+        },
+        getArp: function(){
+          var self = this
+          console.log("Start Get arp Data")
+          axios.post(window.location.href, "type=getArp")
+            .then(function (data) {
+              console.log("Get Data")
+              if (data.data != "error") {
+                self.arp = data.data
+                console.log(data.data)
+              }
+              else {
+                alert("获取数据失败！")
+              }
+            })
+            .catch(function (error) { // 请求失败处理
+              console.log(error);
+            });
+        },
+        showChange: function (name) {
+          for (var i = 0; i < this.links.length; i++) {
+            if (this.links[i].name == name) {
+              this.now_name = this.links[i].name
+              this.now_from = this.links[i].from
+              this.now_to = this.links[i].to
+              break
+            }
+          }
+        },
+        saveChange: function (name) {
+          if (this.now_name == "" || this.now_from == "" || this.now_to == "") {
+            alert("请输入正确的信息!")
+            return
+          }
+          var self = this
+          axios.post("/", "type=change&name=" + this.now_name + "&from=" + this.now_from + "&to=" + this.now_to)
+            .then(function (data) {
+              if (data.data != "error") {
+                //alert(data.data)
+                console.log(data.data)
+                self.getServers()
+              }
+              else {
+                alert("发送数据失败！")
+              }
+            })
+            .catch(function (error) { // 请求失败处理
+              alert("发送数据失败！")
+              console.log(error);
+            });
+        },
+        deleteServer: function (name) {
+          var self = this
+          axios.post("/", "type=delete&name=" + name)
+            .then(function (data) {
+              if (data.data != "error") {
+                //alert(data.data)
+                console.log(data.data)
+                self.getServers()
+              }
+              else {
+                alert("发送数据失败！")
+              }
+            })
+            .catch(function (error) { // 请求失败处理
+              alert("发送数据失败！")
+              console.log(error);
+            });
+        },
+        newServer(name) {
+          if (this.new_name == "" || this.new_from == "" || this.new_to == "") {
+            alert("请输入正确的信息!")
+            return
+          }
+          var self = this
+          axios.post("/", "type=new&name=" + this.new_name + "&from=" + this.new_from + "&to=" + this.new_to)
+            .then(function (data) {
+              if (data.data != "error") {
+                //alert(data.data)
+                console.log(data.data)
+                self.getServers()
+                self.new_name = ""
+                self.new_from = ""
+                self.new_to = ""
+              }
+              else {
+                alert("发送数据失败！")
+              }
+            })
+            .catch(function (error) { // 请求失败处理
+              alert("发送数据失败！")
+              console.log(error);
+            });
+        }
+      }
+    })
+  </script>
+</body>
+
+<footer style="text-align:center;">
+  <p>Powered by <a href="https://www.cnblogs.com/lee-li">Lee(点击访问博客)</a></p>
+  <p>Lee：leeli@live.cn</p>
+</footer>
+
+</html>
